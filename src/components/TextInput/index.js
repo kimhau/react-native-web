@@ -4,11 +4,10 @@ import createDOMElement from '../../modules/createDOMElement';
 import findNodeHandle from '../../modules/findNodeHandle';
 import StyleSheet from '../../apis/StyleSheet';
 import Text from '../Text';
-import TextareaAutosize from 'react-textarea-autosize';
 import TextInputState from './TextInputState';
 import UIManager from '../../apis/UIManager';
 import View from '../View';
-import { Component, PropTypes } from 'react';
+import React, { Component, PropTypes } from 'react';
 
 const emptyObject = {};
 
@@ -65,7 +64,6 @@ class TextInput extends Component {
       'default', 'email-address', 'number-pad', 'numeric', 'phone-pad', 'search', 'url', 'web-search'
     ]),
     maxLength: PropTypes.number,
-    maxNumberOfLines: PropTypes.number,
     multiline: PropTypes.bool,
     numberOfLines: PropTypes.number,
     onBlur: PropTypes.func,
@@ -94,7 +92,7 @@ class TextInput extends Component {
     editable: true,
     keyboardType: 'default',
     multiline: false,
-    numberOfLines: 2,
+    numberOfLines: 0,
     secureTextEntry: false,
     style: emptyObject
   };
@@ -121,6 +119,7 @@ class TextInput extends Component {
 
   componentDidMount() {
     setSelection(this._node, this.props.selection);
+    this._updateMirror();
   }
 
   componentDidUpdate() {
@@ -132,9 +131,7 @@ class TextInput extends Component {
       autoCorrect,
       editable,
       keyboardType,
-      maxNumberOfLines,
       multiline,
-      numberOfLines,
       secureTextEntry,
       style,
       /* eslint-disable */
@@ -143,6 +140,7 @@ class TextInput extends Component {
       dataDetectorTypes,
       enablesReturnKeyAutomatically,
       keyboardAppearance,
+      numberOfLines,
       onChangeText,
       onContentSizeChange,
       onEndEditing,
@@ -186,7 +184,7 @@ class TextInput extends Component {
       type = 'password';
     }
 
-    const component = multiline ? TextareaAutosize : 'input';
+    const component = multiline ? 'textarea' : 'input';
 
     Object.assign(otherProps, {
       autoCorrect: autoCorrect ? 'on' : 'off',
@@ -200,18 +198,32 @@ class TextInput extends Component {
       ref: this._setNode,
       style: [
         styles.initial,
-        style
+        style,
+        multiline && styles.multiline
       ]
     });
 
+    let mirrorProps;
     if (multiline) {
-      otherProps.maxRows = maxNumberOfLines || numberOfLines;
-      otherProps.minRows = numberOfLines;
+      mirrorProps = {
+        ref: this._setMirrorNode,
+        style: [
+          otherProps.style,
+          styles.mirror
+        ]
+      };
     } else {
       otherProps.type = type;
     }
 
-    return createDOMElement(component, otherProps);
+    const textinput = createDOMElement(component, otherProps);
+
+    return multiline ? (
+      <View style={styles.multilineContainer}>
+        {createDOMElement('div', { children: textinput, style: [ styles.multilineTextareaContainer ] })}
+        {createDOMElement('div', mirrorProps)}
+      </View>
+    ) : textinput;
   }
 
   _handleBlur = (e) => {
@@ -222,6 +234,7 @@ class TextInput extends Component {
   _handleChange = (e) => {
     const { onChange, onChangeText } = this.props;
     const { text } = e.nativeEvent;
+    this._updateMirror();
     if (onChange) { onChange(e); }
     if (onChangeText) { onChangeText(text); }
   }
@@ -262,6 +275,32 @@ class TextInput extends Component {
   _setNode = (component) => {
     this._node = findNodeHandle(component);
   }
+
+  _setMirrorNode = (component) => {
+    this._mirrorNode = findNodeHandle(component);
+  }
+
+  _getNodeValue() {
+    return this._node.value || this._node.placeholder;
+  }
+
+  _updateMirror() {
+    const { multiline, numberOfLines } = this.props;
+    if (multiline) {
+      this._mirrorNode.style.width = `${this._node.getBoundingClientRect().width}px`;
+      this._mirrorNode.innerHTML = this._constrain(numberOfLines > 0 ?
+        new Array(numberOfLines) :
+        this._getNodeValue().split('\n'));
+    }
+  }
+
+  _constrain(tokens = [ '' ]) {
+    const _tokens = tokens.slice(0);
+    while (this.rows > 0 && _tokens.length < this.rows) {
+      _tokens.push('');
+    }
+    return `${_tokens.join('<br/>')}&#160;`;
+  }
 }
 
 const styles = StyleSheet.create({
@@ -275,6 +314,25 @@ const styles = StyleSheet.create({
     color: 'inherit',
     font: 'inherit',
     padding: 0
+  },
+  multilineContainer: {
+    position: 'relative',
+    overflow: 'hidden'
+  },
+  multilineTextareaContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    left: 0,
+    bottom: 0
+  },
+  multiline: {
+    height: '100%',
+    position: 'relative',
+    resize: 'none'
+  },
+  mirror: {
+    visibility: 'hidden'
   }
 });
 

@@ -767,6 +767,12 @@ const examples = [
             style={styles.multiline}
             dataDetectorTypes="phoneNumber"
           />
+          <TextInput
+            placeholder="multiline with max rows"
+            numberOfLines={4}
+            multiline={true}
+            style={styles.multiline}
+          />
         </View>
       );
     }

@@ -1,12 +1,11 @@
 /* eslint-env jasmine, jest */
 
 import React from 'react';
-import TextareaAutosize from 'react-textarea-autosize';
 import TextInput from '..';
 import { mount, shallow } from 'enzyme';
 
 const findNativeInput = (wrapper) => wrapper.find('input');
-const findNativeTextarea = (wrapper) => wrapper.find(TextareaAutosize);
+const findNativeTextarea = (wrapper) => wrapper.find('textarea');
 
 const testIfDocumentIsFocused = (message, fn) => {
   if (document.hasFocus && document.hasFocus()) {
