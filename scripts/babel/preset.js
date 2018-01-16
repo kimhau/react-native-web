@@ -28,7 +28,7 @@ module.exports = {
   ],
   plugins: [
     ['babel-plugin-transform-class-properties', { loose: true }],
-    ['babel-plugin-transform-object-rest-spread', { useBuiltIns: true }],
+    ['babel-plugin-transform-object-rest-spread'],
     ['babel-plugin-transform-react-remove-prop-types', { mode: 'wrap' }]
   ]
 };
